@@ -93,6 +93,12 @@ class RTFS(commands.Cog):
     async def red_delete_data_for_user(self, *, requester, user_id):
         pass  # Nothing to delete
 
+    @staticmethod
+    def sanitize_output(ctx: commands.Context, input_: str) -> str:
+        """Hides the bot's token from a string."""
+        token = ctx.bot.http.token
+        return re.sub(re.escape(token), "[EXPUNGED]", input_, re.I)
+
     @classmethod
     async def format_and_send(
         cls, ctx: commands.Context, obj: Any, *, is_owner: bool = False
@@ -190,15 +196,18 @@ class RTFS(commands.Cog):
             raise OSError()
         if not header:
             if module:
-                header = box(f"File {source_file}, line {line}, in module {module}", lang="py")
+                header = RTFS.sanitize_output(box(f"File {source_file}, line {line}, in module {module}", lang="py"))
             else:
-                header = box(f"File {source_file}, line {line}", lang="py")
+                header = RTFS.sanitize_output(box(f"File {source_file}, line {line}", lang="py"))
         raw_pages = list(
             pagify(
-                "".join(chain([comments], lines) if comments else lines).replace(
-                    # \u02CB = modifier letter grave accent
-                    "```",
-                    "\u02CB\u02CB\u02CB",
+                RTFS.sanitize_output(
+                    ctx,
+                    "".join(chain([comments], lines) if comments else lines).replace(
+                        # \u02CB = modifier letter grave accent
+                        "```",
+                        "\u02CB\u02CB\u02CB",
+                    ),
                 ),
                 shorten_by=10,
                 page_length=1024,
@@ -247,7 +256,10 @@ class RTFS(commands.Cog):
             return await ctx.send(f"I couldn't find any cog, command, or object named `{thing}`.")
         except Exception as e:
             return await ctx.send(
-                box("".join(traceback.format_exception_only(type(e), e)), lang="py")
+                self.sanitize_output(
+                    ctx,
+                    box("".join(traceback.format_exception_only(type(e), e)), lang="py")
+                )
             )
         try:
             return await self.format_and_send(ctx, obj, is_owner=is_owner)
@@ -255,5 +267,8 @@ class RTFS(commands.Cog):
             return await ctx.send(f"I couldn't find source file for object `{thing}`")
         except TypeError as te:
             return await ctx.send(
-                box("".join(traceback.format_exception_only(type(te), te)), lang="py")
+                self.sanitize_output(
+                    ctx,
+                    box("".join(traceback.format_exception_only(type(te), te)), lang="py")
+                )
             )
