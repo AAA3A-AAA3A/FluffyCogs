@@ -196,9 +196,9 @@ class RTFS(commands.Cog):
             raise OSError()
         if not header:
             if module:
-                header = RTFS.sanitize_output(box(f"File {source_file}, line {line}, in module {module}", lang="py"))
+                header = RTFS.sanitize_output(ctx, box(f"File {source_file}, line {line}, in module {module}", lang="py"))
             else:
-                header = RTFS.sanitize_output(box(f"File {source_file}, line {line}", lang="py"))
+                header = RTFS.sanitize_output(ctx, box(f"File {source_file}, line {line}", lang="py"))
         raw_pages = list(
             pagify(
                 RTFS.sanitize_output(
